@@ -43,6 +43,7 @@
             android:background="@null"
             android:ems="10"
             android:hint="Search here"
+            android:singleLine="true"
             android:imeOptions="actionDone"
             android:inputType="text" />
     </android.support.v7.widget.CardView>

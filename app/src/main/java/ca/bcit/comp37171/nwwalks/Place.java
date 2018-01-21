@@ -10,7 +10,7 @@ public class Place {
 
     private LatLng location;
     private String name;
-
+    private String distanceFromCurrentLocation;
     public LatLng getLocation() {
         return location;
     }
@@ -31,11 +31,20 @@ public class Place {
         this.name = name;
     }
 
+    public String getDistanceFromCurrentLocation() {
+        return distanceFromCurrentLocation;
+    }
+
+    public void setDistanceFromCurrentLocation(String distanceFromCurrentLocation) {
+        this.distanceFromCurrentLocation = distanceFromCurrentLocation;
+    }
+
     @Override
     public String toString() {
         return "Place{" +
                 "location=" + location +
                 ", name='" + name + '\'' +
+                ", distanceFromCurrentLocation='" + distanceFromCurrentLocation + '\'' +
                 '}';
     }
 }
