@@ -11,6 +11,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -23,16 +25,18 @@ import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListe
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
-        ConnectionCallbacks, OnConnectionFailedListener, FinderListener {
+        ConnectionCallbacks, OnConnectionFailedListener, FinderListener, OnMarkerClickListener {
 
     private static final String TAG = "MainActivity.java";
     private static final int LOCATION_REQUEST_CODE = 1;
@@ -70,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
+        map.setOnMarkerClickListener(this);
         enableCurrentLocation();
     }
 
@@ -133,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /*
     listeners for the widgets in the current context (activity_main.xml)
      */
-    private void addListners(){
+    private void addListners() {
         EditText search_field = (EditText) findViewById(R.id.search_field);
 
         // adding listener
@@ -150,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     handled = true;
                 }
 
-                return handled;
+                return !handled; //have to return the opposite, because if it's successful the keyboard should hide. But for some strange reason, it hides the keyboard if false is returned (which is what we want if our action works)
             }
         });
 
@@ -159,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /*
     searches with the use fo the keyword
      */
-    private void findPlaces(String keyword){
+    private void findPlaces(String keyword) {
         finder.search(currentLatLng, keyword);
     }
 
@@ -176,16 +181,45 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /*
     adds markers from the places array list
      */
-    private void addPlaceMarkers(){
+    private void addPlaceMarkers() {
         map.clear();
         Iterator<Place> i = this.places.iterator();
         Log.v(TAG, "" + i.hasNext());
-        while(i.hasNext()) {
+        while (i.hasNext()) {
             Place p = i.next();
             Log.v(TAG, p.toString());
-            map.addMarker(new MarkerOptions().position(p.getLocation())
+            map.addMarker(new MarkerOptions()
+                    .position(p.getLocation())
                     .title(p.getName()));
         }
 
+    }
+
+    @Override
+    public boolean onMarkerClick(final Marker marker) {
+        Place clickedPlace = getPlace(marker.getPosition());
+        if (clickedPlace != null) showLocationDetails(clickedPlace);
+        return true;
+    }
+
+    private void showLocationDetails(Place p) {
+        //builds view
+        LayoutInflater inflater = this.getLayoutInflater();
+        View v = inflater.inflate(R.layout.place_details, null);
+
+        //creating pull out (haha get it?) menu TODO: fix this comment before submission, don't wanna be seen as an immature fuck
+        PlaceDetailsDialog mapDetailsFramgment = new PlaceDetailsDialog(this, v);
+        mapDetailsFramgment.setName(p.getName());
+        mapDetailsFramgment.setDistance(p.getDistanceFromCurrentLocation());
+        mapDetailsFramgment.show();
+
+    }
+
+    private Place getPlace(LatLng latLng) {
+        for (Place p : this.places) {
+            if (p.getLocation().equals(latLng))
+                return p;
+        }
+        return null;
     }
 }

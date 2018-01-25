@@ -69,6 +69,7 @@ public class Finder {
     }
 
     void handleRes(String response) {
+        Log.v(TAG, response);
         JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
         JsonElement res = jsonObject.get("results");
         Iterator<JsonElement> i;
@@ -90,6 +91,7 @@ public class Finder {
 
             p.setLocation(placeLocation.get("lat").getAsDouble(), placeLocation.get("lng").getAsDouble());
             p.setName(placeName);
+            p.setDistanceFromCurrentLocation("test");
             places.add(p);
         }
 
