@@ -30,7 +30,7 @@ public class Finder {
     private Context context;
     private ArrayList<Place> places = new ArrayList<>();
     private FinderListener listener;
-
+    private static RequestQueue queue;
     public Finder(Context c, FinderListener finderListener) {
         context = c;
         listener = finderListener;
@@ -45,7 +45,7 @@ public class Finder {
 
     private void req(String params) {
         places.clear(); //getting ready to store for a new search
-        RequestQueue queue = Volley.newRequestQueue(context);
+        queue = Volley.newRequestQueue(context);
 
         String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?" + params;
 
@@ -69,7 +69,6 @@ public class Finder {
     }
 
     void handleRes(String response) {
-        Log.v(TAG, response);
         JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
         JsonElement res = jsonObject.get("results");
         Iterator<JsonElement> i;
@@ -100,6 +99,42 @@ public class Finder {
 
     private void handleError() {
         Log.d(TAG, "an error occurred");
+    }
+
+    void getDirections(Place p, LatLng origin){
+        queue = Volley.newRequestQueue(context);
+
+        String params = "origin=" + origin.latitude + "," + origin.longitude
+                +"&destination=" + p.getLocation().latitude + "," + p.getLocation().longitude
+                +"&mode=walking";
+
+        Log.v(TAG, params);
+        String url = "https://maps.googleapis.com/maps/api/directions/json?" + params;
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        dealWithDirections(response);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d(TAG, "Volley Error:", error);
+                handleError();
+            }
+        });
+
+        queue.add(stringRequest);
+    }
+
+    void dealWithDirections(String response) {
+
+        JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
+        JsonElement res = jsonObject.get("results").getAsJsonObject().get("legs").getAsJsonObject().get("steps");
+        Log.v(TAG, res.getAsString());
+
+        listener.directionsFound();
     }
 }
 

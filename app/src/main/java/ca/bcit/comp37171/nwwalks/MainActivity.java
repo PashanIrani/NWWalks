@@ -178,6 +178,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         addPlaceMarkers();
     }
 
+    @Override
+    public void directionsFound() {
+
+    }
+
     /*
     adds markers from the places array list
      */
@@ -213,6 +218,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapDetailsFramgment.setDistance(p.getDistanceFromCurrentLocation());
         mapDetailsFramgment.show();
 
+        finder.getDirections(p, currentLatLng);
     }
 
     private Place getPlace(LatLng latLng) {
