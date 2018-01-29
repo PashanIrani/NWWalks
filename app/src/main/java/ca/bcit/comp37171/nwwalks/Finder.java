@@ -17,7 +17,6 @@ import com.google.gson.JsonParser;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-
 /**
  * Created by pashan on 2018-01-17.
  */
@@ -40,14 +39,12 @@ public class Finder {
     public void search(LatLng searchAround, String keyword) {
         String currentLocation = searchAround.latitude + "," + searchAround.longitude;
         String param = "location=" + currentLocation + "&radius=" + RADIUS + "&keyword=" + keyword + " &key=" + key;
-        req(param);
-    }
 
-    private void req(String params) {
         places.clear(); //getting ready to store for a new search
+
         queue = Volley.newRequestQueue(context);
 
-        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?" + params;
+        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?" + param;
 
         //req desc, "not actually being called at this instance"
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -108,7 +105,6 @@ public class Finder {
                 +"&destination=" + p.getLocation().latitude + "," + p.getLocation().longitude
                 +"&mode=walking";
 
-        Log.v(TAG, params);
         String url = "https://maps.googleapis.com/maps/api/directions/json?" + params;
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -131,10 +127,16 @@ public class Finder {
     void dealWithDirections(String response) {
 
         JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
-        JsonElement res = jsonObject.get("results").getAsJsonObject().get("legs").getAsJsonObject().get("steps");
-        Log.v(TAG, res.getAsString());
+        Log.v(TAG, jsonObject.toString());
+        JsonArray routes = jsonObject.get("routes").getAsJsonArray();
+        String p = "";
+        for (int i = 0; i < routes.size(); i++) {
+            p = routes.get(i).getAsJsonObject().get("overview_polyline").getAsJsonObject().get("points").toString();
+            Log.v(TAG, p);
+        }
 
-        listener.directionsFound();
+
+        listener.directionsFound(p);
     }
 }
 

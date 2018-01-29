@@ -31,6 +31,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.maps.android.PolyUtil;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -179,8 +180,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public void directionsFound() {
-
+    public void directionsFound(String p) {
+        PolyUtil.decode(p);
     }
 
     /*
