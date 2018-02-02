@@ -213,7 +213,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         LayoutInflater inflater = this.getLayoutInflater();
         View v = inflater.inflate(R.layout.place_details, null);
 
-        //creating pull out (haha get it?) menu TODO: fix this comment before submission, don't wanna be seen as an immature fuck
         PlaceDetailsDialog mapDetailsFramgment = new PlaceDetailsDialog(this, v);
         mapDetailsFramgment.setName(p.getName());
         mapDetailsFramgment.setDistance(p.getDistanceFromCurrentLocation());
