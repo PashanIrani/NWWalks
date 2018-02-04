@@ -2,6 +2,7 @@ package ca.bcit.comp37171.nwwalks;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -13,6 +14,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -23,12 +25,15 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -53,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
 
         //listeners for the widgets in the layout (activity_main.xml)
-        addListners();
+        addListeners();
 
         // Obtain the SupportMapFragment
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -76,6 +81,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map = googleMap;
         map.setOnMarkerClickListener(this);
         enableCurrentLocation();
+        try {
+            // Customise the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            boolean success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                            this, R.raw.style_json));
+
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Can't find style. Error: ", e);
+        }
     }
 
     /*
@@ -138,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /*
     listeners for the widgets in the current context (activity_main.xml)
      */
-    private void addListners() {
+    private void addListeners() {
         EditText search_field = (EditText) findViewById(R.id.search_field);
 
         // adding listener
@@ -169,12 +187,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     /*
-    since we have to wait for the response in the 'Finder' object to complete, this will run when the response is complete. #TODO: rephrase this w/ the help of the white man #justin
+    This will run when we receive a response from the finder object above.
      */
     @Override
     public void placesFound(ArrayList<Place> places) {
         Log.v(TAG, "placesFound");
         this.places = places;
+
         addPlaceMarkers();
     }
 
@@ -199,6 +218,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public boolean onMarkerClick(final Marker marker) {
         Place clickedPlace = getPlace(marker.getPosition());
         if (clickedPlace != null) showLocationDetails(clickedPlace);
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        builder.include(marker.getPosition());
+        builder.include(currentLatLng);
+        LatLngBounds bounds = builder.build();
+        int width = getResources().getDisplayMetrics().widthPixels;
+        int height = getResources().getDisplayMetrics().heightPixels;
+        int padding = (int) (height * 0.10); // offset from edges of the map 20% of screen
+
+        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
+
+        map.moveCamera(cu);
         return true;
     }
 
