@@ -3,6 +3,7 @@ package ca.bcit.comp37171.nwwalks;
 import android.content.Context;
 import android.support.design.widget.BottomSheetDialog;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 /**
