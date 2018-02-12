@@ -17,7 +17,6 @@ import com.google.gson.JsonParser;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-
 /**
  * Created by pashan on 2018-01-17.
  */
@@ -30,7 +29,7 @@ public class Finder {
     private Context context;
     private ArrayList<Place> places = new ArrayList<>();
     private FinderListener listener;
-
+    private static RequestQueue queue;
     public Finder(Context c, FinderListener finderListener) {
         context = c;
         listener = finderListener;
@@ -40,14 +39,12 @@ public class Finder {
     public void search(LatLng searchAround, String keyword) {
         String currentLocation = searchAround.latitude + "," + searchAround.longitude;
         String param = "location=" + currentLocation + "&radius=" + RADIUS + "&keyword=" + keyword + " &key=" + key;
-        req(param);
-    }
 
-    private void req(String params) {
         places.clear(); //getting ready to store for a new search
-        RequestQueue queue = Volley.newRequestQueue(context);
 
-        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?" + params;
+        queue = Volley.newRequestQueue(context);
+
+        String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?" + param;
 
         //req desc, "not actually being called at this instance"
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -69,7 +66,6 @@ public class Finder {
     }
 
     void handleRes(String response) {
-        Log.v(TAG, response);
         JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
         JsonElement res = jsonObject.get("results");
         Iterator<JsonElement> i;
@@ -100,6 +96,56 @@ public class Finder {
 
     private void handleError() {
         Log.d(TAG, "an error occurred");
+    }
+
+    void getDirections(Place p, LatLng origin){
+        queue = Volley.newRequestQueue(context);
+
+        String params = "origin=" + origin.latitude + "," + origin.longitude
+                +"&destination=" + p.getLocation().latitude + "," + p.getLocation().longitude
+                +"&mode=walking";
+
+        String url = "https://maps.googleapis.com/maps/api/directions/json?" + params;
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        dealWithDirections(response);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d(TAG, "Volley Error:", error);
+                handleError();
+            }
+        });
+
+        queue.add(stringRequest);
+    }
+
+    void dealWithDirections(String response) {
+
+        JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
+        Log.v(TAG, jsonObject.toString());
+        JsonArray routes = jsonObject.get("routes").getAsJsonArray();
+        ArrayList<String> points = new ArrayList<>();
+
+        for (int i = 0; i < routes.size(); i++) {
+            JsonArray legs = routes.get(i).getAsJsonObject().get("legs").getAsJsonArray();
+            for (int j = 0; j < legs.size(); j++) {
+                JsonArray steps = legs.get(j).getAsJsonObject().get("steps").getAsJsonArray();
+                for (int k = 0; k < steps.size(); k++) {
+                    String polyline = steps.get(k).getAsJsonObject().get("polyline").getAsJsonObject().get("points").getAsString();
+                    points.add(polyline);
+                    Log.v(TAG, polyline);
+                }
+            }
+
+        }
+
+
+        listener.directionsFound(points.toArray(new String[0]));
     }
 }
 
