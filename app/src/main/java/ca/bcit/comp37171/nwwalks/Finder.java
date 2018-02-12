@@ -129,14 +129,23 @@ public class Finder {
         JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
         Log.v(TAG, jsonObject.toString());
         JsonArray routes = jsonObject.get("routes").getAsJsonArray();
-        String p = "";
+        ArrayList<String> points = new ArrayList<>();
+
         for (int i = 0; i < routes.size(); i++) {
-            p = routes.get(i).getAsJsonObject().get("overview_polyline").getAsJsonObject().get("points").toString();
-            Log.v(TAG, p);
+            JsonArray legs = routes.get(i).getAsJsonObject().get("legs").getAsJsonArray();
+            for (int j = 0; j < legs.size(); j++) {
+                JsonArray steps = legs.get(j).getAsJsonObject().get("steps").getAsJsonArray();
+                for (int k = 0; k < steps.size(); k++) {
+                    String polyline = steps.get(k).getAsJsonObject().get("polyline").getAsJsonObject().get("points").getAsString();
+                    points.add(polyline);
+                    Log.v(TAG, polyline);
+                }
+            }
+
         }
 
 
-        listener.directionsFound(p);
+        listener.directionsFound(points.toArray(new String[0]));
     }
 }
 

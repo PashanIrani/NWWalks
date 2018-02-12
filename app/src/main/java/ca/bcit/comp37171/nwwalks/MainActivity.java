@@ -14,7 +14,6 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -36,10 +35,12 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
         ConnectionCallbacks, OnConnectionFailedListener, FinderListener, OnMarkerClickListener {
@@ -199,8 +200,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public void directionsFound(String p) {
-        PolyUtil.decode(p);
+    public void directionsFound(String[] p) {
+        PolylineOptions polyline = new PolylineOptions();
+        List<LatLng> al = new ArrayList<>();
+
+        for (int i = 0; i < p.length; i++) {
+            Log.v(TAG, p[i]);
+            al = PolyUtil.decode(p[i]);
+            polyline.addAll(al);
+        }
+
+        polyline.width(12); //just a random number...
+        polyline.color(getResources().getColor(R.color.colorPrimary));
+        map.addPolyline(polyline);
     }
 
     /*
@@ -209,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void addPlaceMarkers() {
         map.clear();
         Iterator<Place> i = this.places.iterator();
-        Log.v(TAG, "" + i.hasNext());
+
         while (i.hasNext()) {
             Place p = i.next();
             Log.v(TAG, p.toString());
