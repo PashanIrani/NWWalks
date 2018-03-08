@@ -2,6 +2,7 @@ package ca.bcit.comp37171.nwwalks;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -30,6 +31,7 @@ public class Finder {
     private ArrayList<Place> places = new ArrayList<>();
     private FinderListener listener;
     private static RequestQueue queue;
+
     public Finder(Context c, FinderListener finderListener) {
         context = c;
         listener = finderListener;
@@ -57,6 +59,7 @@ public class Finder {
             @Override
             public void onErrorResponse(VolleyError error) {
                 Log.d(TAG, "Volley Error:", error);
+                Toast.makeText(context, "an error occured", Toast.LENGTH_LONG).show();
                 handleError();
             }
         });
@@ -117,6 +120,7 @@ public class Finder {
             @Override
             public void onErrorResponse(VolleyError error) {
                 Log.d(TAG, "Volley Error:", error);
+                Toast.makeText(context, "an error occured", Toast.LENGTH_LONG).show();
                 handleError();
             }
         });

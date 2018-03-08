@@ -240,13 +240,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         builder.include(marker.getPosition());
         builder.include(currentLatLng);
         LatLngBounds bounds = builder.build();
+
         int width = getResources().getDisplayMetrics().widthPixels;
         int height = getResources().getDisplayMetrics().heightPixels;
         int padding = (int) (height * 0.10); // offset from edges of the map 20% of screen
 
         CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
 
-        map.moveCamera(cu);
+        map.animateCamera(cu);
         return true;
     }
 
