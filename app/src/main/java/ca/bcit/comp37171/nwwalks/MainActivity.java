@@ -18,6 +18,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -38,6 +39,12 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -53,6 +60,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleMap map;
     private static ArrayList<Place> places;
     private static Finder finder;
+    private ArrayList<String> numberList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .build();
 
         finder = new Finder(this.getApplicationContext(), this);
+        get_json();
     }
 
     @Override
@@ -270,5 +279,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return p;
         }
         return null;
+    }
+
+    public void get_json(){
+        String json;
+        try
+        {
+            InputStream is = getAssets().open("CONTOURS.json");
+
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+
+            json = new String(buffer, "UTF-8");
+            JSONArray jsonArray = new JSONArray(json);
+
+            for(int i = 0; i<jsonArray.length();i++){
+                JSONObject obj = jsonArray.getJSONObject(i);
+                numberList.add(obj.getString("properties"));
+            }
+            Toast.makeText(getApplicationContext(), "Elevation:  ", Toast.LENGTH_SHORT).show();
+
+        }catch(IOException e){
+            e.printStackTrace();
+        }catch(JSONException e){
+            e.printStackTrace();
+        }
     }
 }
