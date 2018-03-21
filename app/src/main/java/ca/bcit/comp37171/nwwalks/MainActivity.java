@@ -18,7 +18,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
-import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -37,11 +36,8 @@ import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.gson.Gson;
 import com.google.maps.android.PolyUtil;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -84,7 +80,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .build();
 
         finder = new Finder(this.getApplicationContext(), this);
-        get_json();
+        getCONTOURS();
     }
 
     @Override
@@ -256,7 +252,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
 
-        map.animateCamera(cu);
+        map.moveCamera(cu);
         return true;
     }
 
@@ -281,30 +277,36 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return null;
     }
 
-    public void get_json(){
-        String json;
+    public Contours getCONTOURS(){
+        String json = "";
+        Contours contours = null;
+        Gson gson = new Gson();
         try
         {
-            InputStream is = getAssets().open("CONTOURS.json");
-
+            InputStream is = this.getAssets().open("CONTOURS.json");
             int size = is.available();
             byte[] buffer = new byte[size];
             is.read(buffer);
             is.close();
 
             json = new String(buffer, "UTF-8");
-            JSONArray jsonArray = new JSONArray(json);
-
-            for(int i = 0; i<jsonArray.length();i++){
-                JSONObject obj = jsonArray.getJSONObject(i);
-                numberList.add(obj.getString("properties"));
-            }
-            Toast.makeText(getApplicationContext(), "Elevation:  ", Toast.LENGTH_SHORT).show();
 
         }catch(IOException e){
             e.printStackTrace();
-        }catch(JSONException e){
-            e.printStackTrace();
         }
+        Log.v(TAG, "begin");
+        try {
+            // convert json in an User object
+            contours = gson.fromJson(json, Contours.class);
+        }
+        catch (Exception e) {
+            // we never know :)
+            Log.e("error parsing", e.toString());
+        }
+
+        Log.v(TAG, contours.toString());
+        Log.v(TAG, "end");
+        return contours;
     }
+
 }
