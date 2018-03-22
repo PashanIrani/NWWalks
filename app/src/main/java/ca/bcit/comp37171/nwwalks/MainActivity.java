@@ -226,7 +226,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void addPlaceMarkers() {
         map.clear();
         Iterator<Place> i = this.places.iterator();
-
+Log.v(TAG, "huh");
         while (i.hasNext()) {
             Place p = i.next();
             Log.v(TAG, p.toString());
@@ -304,7 +304,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Log.e("error parsing", e.toString());
         }
 
-        Log.v(TAG, contours.toString());
+        //Log.v(TAG, contours.toString());
         Log.v(TAG, "end");
         return contours;
     }

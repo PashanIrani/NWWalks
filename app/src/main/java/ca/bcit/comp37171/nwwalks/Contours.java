@@ -1,6 +1,7 @@
 package ca.bcit.comp37171.nwwalks;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class Contours {
     public String name = null;
@@ -25,7 +26,7 @@ public class Contours {
 
     class Geometry {
         public String type = null;
-        ArrayList<double[]> coordinates = null;
+        HashSet<double[]> coordinates = null;
     }
 
     class Properties {
