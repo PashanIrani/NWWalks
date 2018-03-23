@@ -26,7 +26,7 @@ public class Finder {
 
     private static final String TAG = "Finder.java";
     private static String key;
-    private static final int RADIUS = 20000;
+    private static final int RADIUS = 20000; //radius for search range
     private Context context;
     private ArrayList<Place> places = new ArrayList<>();
     private FinderListener listener;
@@ -38,13 +38,21 @@ public class Finder {
         key = context.getString(R.string.google_maps_key); //getting the google API key
     }
 
-    public void search(LatLng searchAround, String keyword) {
-        if (searchAround == null) return;
-        String currentLocation = searchAround.latitude + "," + searchAround.longitude;
+    /**
+     * Searches for places, see more details here: https://developers.google.com/places/web-service/search
+     * @param searchAroundPoint point to search around
+     * @param keyword keyword to search for
+     */
+    public void search(LatLng searchAroundPoint, String keyword) {
+        if (searchAroundPoint == null) return;
+        String currentLocation = searchAroundPoint.latitude + "," + searchAroundPoint.longitude;
+
+        //setup params for request
         String param = "location=" + currentLocation + "&radius=" + RADIUS + "&keyword=" + keyword + " &key=" + key;
 
         places.clear(); //getting ready to store for a new search
 
+        //add request to be next in line
         queue = Volley.newRequestQueue(context);
 
         String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?" + param;
@@ -60,7 +68,6 @@ public class Finder {
             @Override
             public void onErrorResponse(VolleyError error) {
                 Log.d(TAG, "Volley Error:", error);
-                Toast.makeText(context, "an error occured", Toast.LENGTH_LONG).show();
                 handleError();
             }
         });
@@ -100,13 +107,19 @@ public class Finder {
 
     private void handleError() {
         Log.d(TAG, "an error occurred");
+        Toast.makeText(context, "An Error Occured", Toast.LENGTH_LONG).show();
     }
 
-    void getDirections(Place p, LatLng origin){
+    /**
+     * Gets directions
+     * @param place Place to get directions to.
+     * @param origin LatLng to go from
+     */
+    void getDirections(Place place, LatLng origin){
         queue = Volley.newRequestQueue(context);
 
         String params = "origin=" + origin.latitude + "," + origin.longitude
-                +"&destination=" + p.getLocation().latitude + "," + p.getLocation().longitude
+                +"&destination=" + place.getLocation().latitude + "," + place.getLocation().longitude
                 +"&mode=walking";
 
         String url = "https://maps.googleapis.com/maps/api/directions/json?" + params;
@@ -129,11 +142,15 @@ public class Finder {
         queue.add(stringRequest);
     }
 
+    /**
+     * Deals with directions; gathers polylines from response
+     */
     void dealWithDirections(String response) {
 
         JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
-        Log.v(TAG, jsonObject.toString());
+
         JsonArray routes = jsonObject.get("routes").getAsJsonArray();
+
         ArrayList<String> points = new ArrayList<>();
 
         for (int i = 0; i < routes.size(); i++) {
@@ -143,13 +160,12 @@ public class Finder {
                 for (int k = 0; k < steps.size(); k++) {
                     String polyline = steps.get(k).getAsJsonObject().get("polyline").getAsJsonObject().get("points").getAsString();
                     points.add(polyline);
-                    Log.v(TAG, polyline);
                 }
             }
 
         }
 
-
+        //sends polylines to listener
         listener.directionsFound(points.toArray(new String[0]));
     }
 }

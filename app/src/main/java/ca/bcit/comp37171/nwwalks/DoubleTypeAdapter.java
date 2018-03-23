@@ -5,8 +5,8 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+
+import static java.lang.Math.floor;
 
 /**
  * Created by pashan on 2018-03-22.
@@ -21,7 +21,7 @@ import java.math.RoundingMode;
 
     @Override
     public Double read(JsonReader in) throws IOException {
-        return new BigDecimal(in.nextDouble()).setScale(4, RoundingMode.HALF_UP).doubleValue();
+        return floor(10000 * in.nextDouble() + 0.5) / 10000;
     }
 }
 

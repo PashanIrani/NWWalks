@@ -22,7 +22,7 @@ public class LoadContoursTask extends AsyncTask<Void, Void, Contours> {
         super();
         activity = a;
     }
-    double el_change = 0;
+
 
     protected Contours doInBackground(Void... params) {
 
@@ -45,7 +45,7 @@ public class LoadContoursTask extends AsyncTask<Void, Void, Contours> {
         }catch(IOException e){
             e.printStackTrace();
         }
-        Log.v(TAG, "begin");
+
         try {
             // convert json in an User object
             contours = gson.fromJson(json, Contours.class);
@@ -57,8 +57,6 @@ public class LoadContoursTask extends AsyncTask<Void, Void, Contours> {
 
         //Log.v(TAG, contours.toString());
         contours.removeRes();
-        Log.v(TAG, contours.toString());
-        Log.v(TAG, "end");
         return contours;
     }
 

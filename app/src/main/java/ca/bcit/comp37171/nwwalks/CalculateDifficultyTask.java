@@ -6,7 +6,6 @@ import android.util.Log;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.maps.android.PolyUtil;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -17,37 +16,39 @@ import java.util.List;
 public class CalculateDifficultyTask extends AsyncTask<String[], Void, Double> {
     String TAG = CalculateDifficultyTask.class.getName();
     Contours contours;
-    public AsyncResponse delegate = null;
+    private AsyncResponse listener = null; //
+
+    public void setListener(AsyncResponse listener) {
+        this.listener = listener;
+    }
 
     public CalculateDifficultyTask(Contours contours) {
         super();
         this.contours = contours;
     }
-    double el_change = 0;
-    protected Double doInBackground(String[]... polycodes) {
-        for (String polycode[] : polycodes) {
-            performCalc(polycode);
+
+
+    protected Double doInBackground(String[]... polyCodes) {
+        for (String polyCode[] : polyCodes) {
+            performCalc(polyCode);
         }
         return 0.0;
     }
 
 
     protected void onPostExecute(Double result) {
-        delegate.processFinish(result);
-        Log.v(TAG,"Downloaded " + result + " bytes");
+        listener.processFinish(result);
     }
 
-    private double performCalc(String[] polycodes) {
-        for (String polycode : polycodes) {
-            Log.v(TAG, polycode);
-            List<LatLng> al;
-            al = PolyUtil.decode(polycode);
-            Log.v(TAG, al.toString());
+    /**
+     * Performs calculation for polyCodes
+     */
+    private double performCalc(String[] polyCodes) {
+        for (String polyCode : polyCodes) {
 
-            Iterator<LatLng> it = al.iterator();
+            List<LatLng> al = PolyUtil.decode(polyCode);
 
-            while (it.hasNext()) {
-                LatLng latLng = it.next();
+            for (LatLng latLng : al) {
                 Log.v(TAG, "FOUND: " + contours.getElevation(latLng));
             }
         }
