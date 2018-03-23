@@ -36,17 +36,14 @@ import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.gson.Gson;
 import com.google.maps.android.PolyUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
-        ConnectionCallbacks, OnConnectionFailedListener, FinderListener, OnMarkerClickListener {
+        ConnectionCallbacks, OnConnectionFailedListener, FinderListener, OnMarkerClickListener, AsyncResponse {
 
     private static final String TAG = "MainActivity.java";
     private static final int LOCATION_REQUEST_CODE = 1;
@@ -57,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static ArrayList<Place> places;
     private static Finder finder;
     private ArrayList<String> numberList = new ArrayList<>();
+    Contours contours;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,7 +78,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .build();
 
         finder = new Finder(this.getApplicationContext(), this);
-        getCONTOURS();
+
+        new LoadContoursTask(this).execute();
     }
 
     @Override
@@ -102,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Log.e(TAG, "Can't find style. Error: ", e);
         }
     }
+
 
     /*
     runs when google play services is connected
@@ -209,14 +209,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         PolylineOptions polyline = new PolylineOptions();
         List<LatLng> al = new ArrayList<>();
 
+        CalculateDifficultyTask cd = new CalculateDifficultyTask(contours);
+        cd.delegate = this;
+        cd.execute(p);
         for (int i = 0; i < p.length; i++) {
-            Log.v(TAG, p[i]);
             al = PolyUtil.decode(p[i]);
+            Log.v(TAG, al.toString());
             polyline.addAll(al);
         }
 
         polyline.width(12); //just a random number...
         polyline.color(getResources().getColor(R.color.colorPrimary));
+        Log.v(TAG, "added polylin");
         map.addPolyline(polyline);
     }
 
@@ -226,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void addPlaceMarkers() {
         map.clear();
         Iterator<Place> i = this.places.iterator();
-Log.v(TAG, "huh");
+        Log.v(TAG, "huh");
         while (i.hasNext()) {
             Place p = i.next();
             Log.v(TAG, p.toString());
@@ -277,36 +281,15 @@ Log.v(TAG, "huh");
         return null;
     }
 
-    public Contours getCONTOURS(){
-        String json = "";
-        Contours contours = null;
-        Gson gson = new Gson();
-        try
-        {
-            InputStream is = this.getAssets().open("CONTOURS.json");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-
-            json = new String(buffer, "UTF-8");
-
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-        Log.v(TAG, "begin");
-        try {
-            // convert json in an User object
-            contours = gson.fromJson(json, Contours.class);
-        }
-        catch (Exception e) {
-            // we never know :)
-            Log.e("error parsing", e.toString());
-        }
-
-        //Log.v(TAG, contours.toString());
-        Log.v(TAG, "end");
-        return contours;
+    //this override the implemented method from asyncTask
+    @Override
+    public void processFinish(Double output) {
+        Log.v(TAG, "REAULT: " + output);
     }
 
+    @Override
+    public void processFinish(Contours output) {
+        this.contours = output;
+        Log.v(TAG, "Contours loading finished");
+    }
 }

@@ -39,6 +39,7 @@ public class Finder {
     }
 
     public void search(LatLng searchAround, String keyword) {
+        if (searchAround == null) return;
         String currentLocation = searchAround.latitude + "," + searchAround.longitude;
         String param = "location=" + currentLocation + "&radius=" + RADIUS + "&keyword=" + keyword + " &key=" + key;
 
