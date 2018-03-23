@@ -36,19 +36,16 @@ import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.gson.Gson;
 import com.google.maps.android.PolyUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
-        ConnectionCallbacks, OnConnectionFailedListener, FinderListener, OnMarkerClickListener {
+        ConnectionCallbacks, OnConnectionFailedListener, FinderListener, OnMarkerClickListener, AsyncResponse {
 
     private static final String TAG = "MainActivity.java";
+
     private static final int LOCATION_REQUEST_CODE = 1;
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
@@ -56,7 +53,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleMap map;
     private static ArrayList<Place> places;
     private static Finder finder;
-    private ArrayList<String> numberList = new ArrayList<>();
+
+    //private ArrayList<String> numberList = new ArrayList<>();
+    Contours contours;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,15 +78,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .addApi(LocationServices.API)
                 .build();
 
+        //initializing finder
         finder = new Finder(this.getApplicationContext(), this);
-        getCONTOURS();
+
+        //loads contours
+        new LoadContoursTask(this).execute();
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
         map.setOnMarkerClickListener(this);
+
         enableCurrentLocation();
+
         try {
             // Customise the styling of the base map using a JSON object defined
             // in a raw resource file.
@@ -102,6 +106,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Log.e(TAG, "Can't find style. Error: ", e);
         }
     }
+
 
     /*
     runs when google play services is connected
@@ -164,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     listeners for the widgets in the current context (activity_main.xml)
      */
     private void addListeners() {
-        EditText search_field = (EditText) findViewById(R.id.search_field);
+        EditText search_field = findViewById(R.id.search_field);
 
         // adding listener
         search_field.setOnEditorActionListener(new OnEditorActionListener() {
@@ -175,7 +180,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 String text = v.getText().toString(); //contains the value of the text field
 
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    Log.v(TAG, text);
                     findPlaces(text);
                     handled = true;
                 }
@@ -193,120 +197,126 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         finder.search(currentLatLng, keyword);
     }
 
-    /*
+    /**
     This will run when we receive a response from the finder object above.
      */
     @Override
     public void placesFound(ArrayList<Place> places) {
-        Log.v(TAG, "placesFound");
         this.places = places;
-
         addPlaceMarkers();
     }
 
+    /**
+     * Adds polyline to the map
+     */
     @Override
     public void directionsFound(String[] p) {
-        PolylineOptions polyline = new PolylineOptions();
-        List<LatLng> al = new ArrayList<>();
+        PolylineOptions polylineOptions = new PolylineOptions();
+        List<LatLng> al;
 
+        //start calculation of path
+        CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
+        calculateDifficultyTask.setListener(this);
+        calculateDifficultyTask.execute(p);
+
+        //add polycodes to polyline
         for (int i = 0; i < p.length; i++) {
-            Log.v(TAG, p[i]);
             al = PolyUtil.decode(p[i]);
-            polyline.addAll(al);
+            polylineOptions.addAll(al);
         }
 
-        polyline.width(12); //just a random number...
-        polyline.color(getResources().getColor(R.color.colorPrimary));
-        map.addPolyline(polyline);
+        polylineOptions.width(16); //just a random number...
+
+        polylineOptions.color(getResources().getColor(R.color.colorPrimary));
+
+        //adds polyline to map
+        map.addPolyline(polylineOptions);
     }
 
-    /*
-    adds markers from the places array list
+    /**
+     * adds markers from the places array list
      */
     private void addPlaceMarkers() {
         map.clear();
-        Iterator<Place> i = this.places.iterator();
 
-        while (i.hasNext()) {
-            Place p = i.next();
-            Log.v(TAG, p.toString());
+        for (Place p : this.places) {
+
+            //adds marker with position, and title
             map.addMarker(new MarkerOptions()
                     .position(p.getLocation())
                     .title(p.getName()));
         }
-
     }
 
     @Override
     public boolean onMarkerClick(final Marker marker) {
-        Place clickedPlace = getPlace(marker.getPosition());
-        if (clickedPlace != null) showLocationDetails(clickedPlace);
-        LatLngBounds.Builder builder = new LatLngBounds.Builder();
-        builder.include(marker.getPosition());
-        builder.include(currentLatLng);
-        LatLngBounds bounds = builder.build();
 
+        //don't do anything if marker is null :P
+        if (marker ==  null) return false;
+
+        Place clickedPlace = getPlace(marker.getPosition()); //gets place
+
+        if (clickedPlace != null) showLocationDetails(clickedPlace);  //shows location details, "the popup"
+
+        //sets bounds to include location and end point in view
+        LatLngBounds bounds = new LatLngBounds.Builder()
+                                .include(marker.getPosition())
+                                .include(currentLatLng)
+                                .build();
+
+        //properties for CameraUpdateFactory
         int width = getResources().getDisplayMetrics().widthPixels;
         int height = getResources().getDisplayMetrics().heightPixels;
         int padding = (int) (height * 0.10); // offset from edges of the map 20% of screen
 
-        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
+        //sets new camera
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
 
-        map.moveCamera(cu);
+        //updates camera
+        map.animateCamera(cameraUpdate);
         return true;
     }
 
     private void showLocationDetails(Place p) {
-        //builds view
+        //TODO: re-make this so there is no black overlay
         LayoutInflater inflater = this.getLayoutInflater();
         View v = inflater.inflate(R.layout.place_details, null);
 
-        PlaceDetailsDialog mapDetailsFramgment = new PlaceDetailsDialog(this, v);
-        mapDetailsFramgment.setName(p.getName());
-        mapDetailsFramgment.setDistance(p.getDistanceFromCurrentLocation());
-        mapDetailsFramgment.show();
+        PlaceDetailsDialog mapDetailsFragment = new PlaceDetailsDialog(this, v);
+
+        mapDetailsFragment.setName(p.getName());
+        mapDetailsFragment.setDistance(p.getDistanceFromCurrentLocation());
+        mapDetailsFragment.show();
 
         finder.getDirections(p, currentLatLng);
     }
 
+    /**
+     * Gets place at LatLng
+     */
     private Place getPlace(LatLng latLng) {
-        for (Place p : this.places) {
+
+        for (Place p : this.places)
             if (p.getLocation().equals(latLng))
                 return p;
-        }
+
         return null;
     }
 
-    public Contours getCONTOURS(){
-        String json = "";
-        Contours contours = null;
-        Gson gson = new Gson();
-        try
-        {
-            InputStream is = this.getAssets().open("CONTOURS.json");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-
-            json = new String(buffer, "UTF-8");
-
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-        Log.v(TAG, "begin");
-        try {
-            // convert json in an User object
-            contours = gson.fromJson(json, Contours.class);
-        }
-        catch (Exception e) {
-            // we never know :)
-            Log.e("error parsing", e.toString());
-        }
-
-        Log.v(TAG, contours.toString());
-        Log.v(TAG, "end");
-        return contours;
+    /**
+     * runs when difficulty of current route has been calculated
+     */
+    @Override
+    public void processFinish(Double output) {
+        Log.v(TAG, "RESULT OF CALCULATION: " + output);
     }
 
+    /**
+     * runs counters are loaded
+     */
+    @Override
+    public void processFinish(Contours output) {
+        this.contours = output;
+        Log.v(TAG, "Contours Loading Finished");
+    }
 }
