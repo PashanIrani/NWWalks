@@ -77,6 +77,7 @@ public class Finder {
     }
 
     void handleRes(String response) {
+        Log.v(TAG, response);
         JsonObject jsonObject = new JsonParser().parse(response).getAsJsonObject();
         JsonElement res = jsonObject.get("results");
         Iterator<JsonElement> i;
@@ -123,7 +124,7 @@ public class Finder {
                 +"&mode=walking";
 
         String url = "https://maps.googleapis.com/maps/api/directions/json?" + params;
-
+        Log.v(TAG, "url");
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
@@ -164,7 +165,7 @@ public class Finder {
             }
 
         }
-
+        Log.v(TAG, "dealWithDirections()");
         //sends polylines to listener
         listener.directionsFound(points.toArray(new String[0]));
     }
