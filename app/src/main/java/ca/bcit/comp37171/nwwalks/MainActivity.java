@@ -7,12 +7,12 @@ import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.BottomSheetBehavior;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleMap map;
     private static ArrayList<Place> places;
     private static Finder finder;
+    BottomSheetBehavior bottomSheetBehavior;
 
     //private ArrayList<String> numberList = new ArrayList<>();
     Contours contours;
@@ -83,6 +84,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         //loads contours
         new LoadContoursTask(this).execute();
+
+        View bottomSheet = findViewById(R.id.start_route_button);
+        bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
+
     }
 
     @Override
@@ -211,6 +216,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @Override
     public void directionsFound(String[] p) {
+        Log.v(TAG, "AHEE");
         PolylineOptions polylineOptions = new PolylineOptions();
         List<LatLng> al;
 
@@ -231,6 +237,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         //adds polyline to map
         map.addPolyline(polylineOptions);
+        Log.v(TAG, polylineOptions.toString());
     }
 
     /**
@@ -279,6 +286,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void showLocationDetails(Place p) {
         //TODO: re-make this so there is no black overlay
+        /*
         LayoutInflater inflater = this.getLayoutInflater();
         View v = inflater.inflate(R.layout.place_details, null);
 
@@ -287,8 +295,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapDetailsFragment.setName(p.getName());
         mapDetailsFragment.setDistance(p.getDistanceFromCurrentLocation());
         mapDetailsFragment.show();
-
+*/
+        TextView routeName = findViewById(R.id.destination_name);
+        routeName.setText(p.getName());
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         finder.getDirections(p, currentLatLng);
+
+
+
+
     }
 
     /**
@@ -309,6 +324,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void processFinish(Double output) {
         Log.v(TAG, "RESULT OF CALCULATION: " + output);
+
+        TextView distance = findViewById(R.id.distance);
+        String text = "" + output;
+        distance.setText(text);
     }
 
     /**
