@@ -60,11 +60,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     Contours contours;
     ProgressBar progressBar;
     ArrayList<PolylineOptions> mPolylines;
+    ArrayList<Route> routeInfos;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        routeInfos = new ArrayList<>();
         //listeners for the widgets in the layout (activity_main.xml)
         addListeners();
 
@@ -103,20 +105,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map = googleMap;
         map.setOnMarkerClickListener(this);
 
+        final MainActivity mainActivity = this;
         map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng clickCoords) {
+                int i = 0;
                 for (PolylineOptions polyline : mPolylines) {
                     for (LatLng polyCoords : polyline.getPoints()) {
                         float[] results = new float[1];
                         Location.distanceBetween(clickCoords.latitude, clickCoords.longitude,
                                 polyCoords.latitude, polyCoords.longitude, results);
+                        //Log.v(TAG, polyline.getPoints());
+
+
 
                         if (results[0] < 100) {
                             // If distance is less than 100 meters, this is your polyline
                             Log.e(TAG, "Found @ "+clickCoords.latitude+" "+clickCoords.longitude);
+
+                            TextView distance = findViewById(R.id.distance);
+                            String text = "" + routeInfos.get(i).getDifficulty();
+                            distance.setText(text);
                         }
+
+
                     }
+                    i++;
                 }
             }
         });
@@ -270,6 +284,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 //        CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
 //        calculateDifficultyTask.setListener(this);
 //        calculateDifficultyTask.execute(p);
+
+
+
+
         Random rnd = new Random();
         //add polycodes to polyline
         for (int i = 0; i < p.size(); i++) {
@@ -285,6 +303,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             map.addPolyline(polylineOptions.get(i));
             mPolylines.add(polylineOptions.get(i));
+            routeInfos.add(new Route(polylineOptions.get(i), contours));
+
+
         }
     }
 
@@ -366,16 +387,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return null;
     }
 
-    /**
-     * runs when difficulty of current route has been calculated
-     */
+
     @Override
     public void processFinish(Double output) {
-        Log.v(TAG, "RESULT OF CALCULATION: " + output);
-
-        TextView distance = findViewById(R.id.distance);
-        String text = "" + output;
-        distance.setText(text);
+        //nothing
     }
 
     /**

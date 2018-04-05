@@ -3,16 +3,13 @@ package ca.bcit.comp37171.nwwalks;
 import android.os.AsyncTask;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.google.maps.android.PolyUtil;
-
-import java.util.List;
 
 /**
  * Created by pashan on 2018-03-22.
  */
 
 
-public class CalculateDifficultyTask extends AsyncTask<String[], Void, Double> {
+public class CalculateDifficultyTask extends AsyncTask<LatLng, Void, Double> {
     String TAG = CalculateDifficultyTask.class.getName();
     Contours contours;
     private AsyncResponse listener = null; //
@@ -27,11 +24,11 @@ public class CalculateDifficultyTask extends AsyncTask<String[], Void, Double> {
     }
 
 
-    protected Double doInBackground(String[]... polyCodes) {
+    protected Double doInBackground(LatLng... polyCodes) {
         double result = 0.0;
-        for (String polyCode[] : polyCodes) {
-            result += performCalc(polyCode);
-        }
+        //for (LatLng polyCode[] : polyCodes) {
+            result += performCalc(polyCodes);
+        //}
         return result;
     }
 
@@ -43,17 +40,17 @@ public class CalculateDifficultyTask extends AsyncTask<String[], Void, Double> {
     /**
      * Performs calculation for polyCodes
      */
-    private double performCalc(String[] polyCodes) {
+    private double performCalc(LatLng[] polyCodes) {
         int total_diff_in_elevation = 0;
-        for (String polyCode : polyCodes) {
+        for (LatLng latLng : polyCodes) {
 
-            List<LatLng> al = PolyUtil.decode(polyCode);
+
 
             int prev_elevation = 0;
 
-            // loopp through turn points adding absolute diffs up
+            // loop through turn points adding absolute diffs up
 
-            for (LatLng latLng : al) {
+           // for (LatLng latLng : al) {
 
                 int current_el = contours.getElevation(latLng);
 
@@ -63,7 +60,7 @@ public class CalculateDifficultyTask extends AsyncTask<String[], Void, Double> {
                 }
                 //Log.v(TAG, "FOUND: " +current_el + ", total diff: " + total_diff_in_elevation);
 
-            }
+            //}
         }
         return total_diff_in_elevation;
     }
