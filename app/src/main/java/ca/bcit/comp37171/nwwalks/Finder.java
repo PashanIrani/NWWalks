@@ -26,7 +26,7 @@ public class Finder {
 
     private static final String TAG = "Finder.java";
     private static String key;
-    private static final int RADIUS = 20000; //radius for search range
+    private static final int RADIUS = 8000; //radius for search range
     private Context context;
     private ArrayList<Place> places = new ArrayList<>();
     private FinderListener listener;
@@ -121,7 +121,8 @@ public class Finder {
 
         String params = "origin=" + origin.latitude + "," + origin.longitude
                 +"&destination=" + place.getLocation().latitude + "," + place.getLocation().longitude
-                +"&mode=walking";
+                +"&mode=walking"
+                + "&alternatives=true";
 
         String url = "https://maps.googleapis.com/maps/api/directions/json?" + params;
         Log.v(TAG, "url");
@@ -152,22 +153,24 @@ public class Finder {
 
         JsonArray routes = jsonObject.get("routes").getAsJsonArray();
 
-        ArrayList<String> points = new ArrayList<>();
+        ArrayList<ArrayList<String>> points = new ArrayList<>();
 
         for (int i = 0; i < routes.size(); i++) {
             JsonArray legs = routes.get(i).getAsJsonObject().get("legs").getAsJsonArray();
+            points.add(new ArrayList<String>());
             for (int j = 0; j < legs.size(); j++) {
                 JsonArray steps = legs.get(j).getAsJsonObject().get("steps").getAsJsonArray();
+
                 for (int k = 0; k < steps.size(); k++) {
                     String polyline = steps.get(k).getAsJsonObject().get("polyline").getAsJsonObject().get("points").getAsString();
-                    points.add(polyline);
+                    points.get(i).add(polyline);
                 }
             }
 
         }
-        Log.v(TAG, "dealWithDirections()");
+
         //sends polylines to listener
-        listener.directionsFound(points.toArray(new String[0]));
+        listener.directionsFound(points);
     }
 }
 
