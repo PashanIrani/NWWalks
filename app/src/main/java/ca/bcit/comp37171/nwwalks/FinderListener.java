@@ -8,6 +8,6 @@ import java.util.ArrayList;
 
 public interface FinderListener {
     void placesFound(ArrayList<Place> p);
-    void directionsFound(String[] polyline);
+    void directionsFound(ArrayList<ArrayList<String>> polyline);
 }
 

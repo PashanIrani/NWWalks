@@ -3,6 +3,7 @@ package ca.bcit.comp37171.nwwalks;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -16,6 +17,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 
@@ -40,6 +42,7 @@ import com.google.maps.android.PolyUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
         ConnectionCallbacks, OnConnectionFailedListener, FinderListener, OnMarkerClickListener, AsyncResponse {
@@ -54,10 +57,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static ArrayList<Place> places;
     private static Finder finder;
     BottomSheetBehavior bottomSheetBehavior;
-
-    //private ArrayList<String> numberList = new ArrayList<>();
     Contours contours;
-
+    ProgressBar progressBar;
+    ArrayList<PolylineOptions> mPolylines;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,6 +90,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         View bottomSheet = findViewById(R.id.start_route_button);
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
 
+        mPolylines = new ArrayList<>();
+
+        //progress bar
+        progressBar = findViewById(R.id.progressBar);
+        progressBar.setIndeterminate(true);
+
     }
 
     @Override
@@ -95,6 +103,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map = googleMap;
         map.setOnMarkerClickListener(this);
 
+        map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng clickCoords) {
+                for (PolylineOptions polyline : mPolylines) {
+                    for (LatLng polyCoords : polyline.getPoints()) {
+                        float[] results = new float[1];
+                        Location.distanceBetween(clickCoords.latitude, clickCoords.longitude,
+                                polyCoords.latitude, polyCoords.longitude, results);
+
+                        if (results[0] < 100) {
+                            // If distance is less than 100 meters, this is your polyline
+                            Log.e(TAG, "Found @ "+clickCoords.latitude+" "+clickCoords.longitude);
+                        }
+                    }
+                }
+            }
+        });
         enableCurrentLocation();
 
         try {
@@ -209,35 +234,58 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void placesFound(ArrayList<Place> places) {
         this.places = places;
         addPlaceMarkers();
+
+        //properties for CameraUpdateFactory
+        int width = getResources().getDisplayMetrics().widthPixels;
+        int height = getResources().getDisplayMetrics().heightPixels;
+        int padding = (int) (height * 0.10); // offset from edges of the map 20% of screen
+
+        //sets bounds to include location and end point in view
+        LatLngBounds.Builder builder = new LatLngBounds.Builder()
+                .include(currentLatLng);
+
+
+        for (Place p : places) {
+            builder.include(p.getLocation());
+        }
+
+        LatLngBounds bounds = builder.build();
+        //sets new camera
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
+
+        //updates camera
+        map.animateCamera(cameraUpdate);
     }
 
     /**
      * Adds polyline to the map
      */
     @Override
-    public void directionsFound(String[] p) {
-        Log.v(TAG, "AHEE");
-        PolylineOptions polylineOptions = new PolylineOptions();
+    public void directionsFound(ArrayList<ArrayList<String>> p) {
+        ArrayList<PolylineOptions> polylineOptions = new ArrayList<>();
+        //PolylineOptions polylineOptions = new PolylineOptions();
         List<LatLng> al;
 
         //start calculation of path
-        CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
-        calculateDifficultyTask.setListener(this);
-        calculateDifficultyTask.execute(p);
-
+//        CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
+//        calculateDifficultyTask.setListener(this);
+//        calculateDifficultyTask.execute(p);
+        Random rnd = new Random();
         //add polycodes to polyline
-        for (int i = 0; i < p.length; i++) {
-            al = PolyUtil.decode(p[i]);
-            polylineOptions.addAll(al);
+        for (int i = 0; i < p.size(); i++) {
+            polylineOptions.add(new PolylineOptions());
+            for (int j = 0; j < p.get(i).size(); j++) {
+                al = PolyUtil.decode(p.get(i).get(j));
+                polylineOptions.get(i).addAll(al);
+            }
+
+            polylineOptions.get(i).width(16); //just a random number...
+
+            polylineOptions.get(i).color(Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
+
+            map.addPolyline(polylineOptions.get(i));
+            mPolylines.add(polylineOptions.get(i));
         }
-
-        polylineOptions.width(16); //just a random number...
-
-        polylineOptions.color(getResources().getColor(R.color.colorPrimary));
-
-        //adds polyline to map
-        map.addPolyline(polylineOptions);
-        Log.v(TAG, polylineOptions.toString());
     }
 
     /**
@@ -247,7 +295,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map.clear();
 
         for (Place p : this.places) {
-
+            Log.v(TAG, "addPlaceMarkers: " + p.toString());
             //adds marker with position, and title
             map.addMarker(new MarkerOptions()
                     .position(p.getLocation())
@@ -337,5 +385,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void processFinish(Contours output) {
         this.contours = output;
         Log.v(TAG, "Contours Loading Finished");
+        progressBar.setIndeterminate(false);
+        progressBar.setVisibility(View.INVISIBLE);
     }
 }
