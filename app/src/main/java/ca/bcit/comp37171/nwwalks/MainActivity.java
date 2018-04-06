@@ -61,7 +61,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     ProgressBar progressBar;
     ArrayList<PolylineOptions> mPolylines;
     ArrayList<Route> routeInfos;
-
+    final LatLngBounds newWest_bounds = new LatLngBounds(
+            new LatLng(49.175019, -122.957226), new LatLng(49.238335, -122.894165));
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -135,6 +136,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
         enableCurrentLocation();
+
+
+
+
+        map.setLatLngBoundsForCameraTarget(newWest_bounds);
 
         try {
             // Customise the styling of the base map using a JSON object defined
@@ -249,26 +255,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         this.places = places;
         addPlaceMarkers();
 
-        //properties for CameraUpdateFactory
-        int width = getResources().getDisplayMetrics().widthPixels;
-        int height = getResources().getDisplayMetrics().heightPixels;
-        int padding = (int) (height * 0.10); // offset from edges of the map 20% of screen
-
-        //sets bounds to include location and end point in view
-        LatLngBounds.Builder builder = new LatLngBounds.Builder()
-                .include(currentLatLng);
-
-
-        for (Place p : places) {
-            builder.include(p.getLocation());
-        }
-
-        LatLngBounds bounds = builder.build();
-        //sets new camera
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
-
-        //updates camera
-        map.animateCamera(cameraUpdate);
     }
 
     /**
@@ -315,13 +301,36 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void addPlaceMarkers() {
         map.clear();
 
+
+
+        //properties for CameraUpdateFactory
+        int width = getResources().getDisplayMetrics().widthPixels;
+        int height = getResources().getDisplayMetrics().heightPixels;
+        int padding = (int) (height * 0.12); // offset from edges of the map 20% of screen
+
+        //sets bounds to include location and end point in view
+        LatLngBounds.Builder builder = new LatLngBounds.Builder()
+                .include(currentLatLng);
+
         for (Place p : this.places) {
             Log.v(TAG, "addPlaceMarkers: " + p.toString());
             //adds marker with position, and title
-            map.addMarker(new MarkerOptions()
-                    .position(p.getLocation())
-                    .title(p.getName()));
+            if(newWest_bounds.contains(p.getLocation())) {
+                map.addMarker(new MarkerOptions()
+                        .position(p.getLocation())
+                        .title(p.getName()));
+
+                builder.include(p.getLocation());
+            }
         }
+
+        LatLngBounds bounds = builder.build();
+
+        //sets new camera
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
+
+        //updates camera
+        map.animateCamera(cameraUpdate);
     }
 
     @Override
@@ -343,7 +352,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         //properties for CameraUpdateFactory
         int width = getResources().getDisplayMetrics().widthPixels;
         int height = getResources().getDisplayMetrics().heightPixels;
-        int padding = (int) (height * 0.10); // offset from edges of the map 20% of screen
+        int padding = (int) (height * 0.12); // offset from edges of the map 20% of screen
 
         //sets new camera
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
@@ -402,5 +411,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.v(TAG, "Contours Loading Finished");
         progressBar.setIndeterminate(false);
         progressBar.setVisibility(View.INVISIBLE);
+        for (Route r : routeInfos) {
+            r.setDifficulty(contours);
+        }
     }
 }
