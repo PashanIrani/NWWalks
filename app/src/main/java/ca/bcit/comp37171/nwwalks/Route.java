@@ -13,9 +13,10 @@ public class Route implements AsyncResponse{
     private PolylineOptions polyline;
     private double difficulty;
     private static final String TAG = "Route.java";
-
+    private Contours contours;
     public Route(PolylineOptions polyline, Contours contours) {
         this.polyline = polyline;
+        this.contours = contours;
         CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
         calculateDifficultyTask.setListener(this);
         calculateDifficultyTask.execute(polyline.getPoints().toArray(new LatLng[]{}));
@@ -31,11 +32,16 @@ public class Route implements AsyncResponse{
     }
 
     public double getDifficulty() {
+        CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
+        calculateDifficultyTask.setListener(this);
+        calculateDifficultyTask.execute(polyline.getPoints().toArray(new LatLng[]{}));
         return difficulty;
     }
 
-    public void setDifficulty(double difficulty) {
-        this.difficulty = difficulty;
+    public void setDifficulty(Contours contours) {
+        CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
+        calculateDifficultyTask.setListener(this);
+        calculateDifficultyTask.execute(polyline.getPoints().toArray(new LatLng[]{}));
     }
 
     /**

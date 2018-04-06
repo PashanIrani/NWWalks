@@ -45,21 +45,25 @@ public class CalculateDifficultyTask extends AsyncTask<LatLng, Void, Double> {
         for (LatLng latLng : polyCodes) {
 
 
+            
 
-            int prev_elevation = 0;
+            int prev_elevation;
 
             // loop through turn points adding absolute diffs up
 
            // for (LatLng latLng : al) {
+try {
+    int current_el = contours.getElevation(latLng);
 
-                int current_el = contours.getElevation(latLng);
+    if (current_el != -1) {
+        prev_elevation = current_el;
+        total_diff_in_elevation += Math.abs(current_el - prev_elevation);
 
-                if (current_el != -1) {
-                    total_diff_in_elevation += Math.abs(current_el - prev_elevation);
-                    prev_elevation = current_el;
-                }
-                //Log.v(TAG, "FOUND: " +current_el + ", total diff: " + total_diff_in_elevation);
+    }
+    //Log.v(TAG, "FOUND: " +current_el + ", total diff: " + total_diff_in_elevation);
+} catch (Exception e) {
 
+}
             //}
         }
         return total_diff_in_elevation;

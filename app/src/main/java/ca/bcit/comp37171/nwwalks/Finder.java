@@ -26,7 +26,7 @@ public class Finder {
 
     private static final String TAG = "Finder.java";
     private static String key;
-    private static final int RADIUS = 8000; //radius for search range
+    private static final int RADIUS = 20000; //radius for search range
     private Context context;
     private ArrayList<Place> places = new ArrayList<>();
     private FinderListener listener;
