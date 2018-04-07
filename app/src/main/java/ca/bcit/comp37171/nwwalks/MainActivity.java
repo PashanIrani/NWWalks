@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -37,12 +38,14 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
         ConnectionCallbacks, OnConnectionFailedListener, FinderListener, OnMarkerClickListener, AsyncResponse {
@@ -59,10 +62,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     BottomSheetBehavior bottomSheetBehavior;
     Contours contours;
     ProgressBar progressBar;
-    ArrayList<PolylineOptions> mPolylines;
     ArrayList<Route> routeInfos;
+    ArrayList<Polyline> polylines;
     final LatLngBounds newWest_bounds = new LatLngBounds(
             new LatLng(49.175019, -122.957226), new LatLng(49.238335, -122.894165));
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,12 +97,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         View bottomSheet = findViewById(R.id.start_route_button);
         bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
 
-        mPolylines = new ArrayList<>();
 
         //progress bar
         progressBar = findViewById(R.id.progressBar);
         progressBar.setIndeterminate(true);
 
+        polylines = new ArrayList<>();
     }
 
     @Override
@@ -109,38 +113,41 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         final MainActivity mainActivity = this;
         map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
-            public void onMapClick(LatLng clickCoords) {
+            public void onMapClick(LatLng clickCords) {
                 int i = 0;
-                for (PolylineOptions polyline : mPolylines) {
-                    for (LatLng polyCoords : polyline.getPoints()) {
-                        float[] results = new float[1];
-                        Location.distanceBetween(clickCoords.latitude, clickCoords.longitude,
-                                polyCoords.latitude, polyCoords.longitude, results);
-                        //Log.v(TAG, polyline.getPoints());
+                Route clickedRoute = null;
+                for (Route r : routeInfos) {
+                    PolylineOptions polyline = r.getPolyline();
+                    boolean selected = false;
 
+                    if (clickedRoute == null) {
+                        for (LatLng polyCoords : polyline.getPoints()) {
+                            float[] results = new float[1];
+                            Location.distanceBetween(clickCords.latitude, clickCords.longitude,
+                                    polyCoords.latitude, polyCoords.longitude, results);
 
+                            //Log.v(TAG, polyline.getPoints());
+                            if (results[0] < 100) {
 
-                        if (results[0] < 100) {
-                            // If distance is less than 100 meters, this is your polyline
-                            Log.e(TAG, "Found @ "+clickCoords.latitude+" "+clickCoords.longitude);
+                                // If distance is less than 100 meters, this is your polyline
+                                Log.e(TAG, "Found @ " + clickCords.latitude + " " + clickCords.longitude);
+                                clickedRoute = r;
 
-                            TextView distance = findViewById(R.id.distance);
-                            String text = "" + routeInfos.get(i).getDifficulty();
-                            distance.setText(text);
+                                selected = true;
+                            }
                         }
-
-
                     }
+                    routeInfos.get(i).setSelected(selected);
                     i++;
                 }
+
+                showTextOnDialogForRoute(clickedRoute);
+                drawRoutes();
             }
         });
         enableCurrentLocation();
 
-
-
-
-        map.setLatLngBoundsForCameraTarget(newWest_bounds);
+        //map.setLatLngBoundsForCameraTarget(newWest_bounds);
 
         try {
             // Customise the styling of the base map using a JSON object defined
@@ -154,6 +161,127 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         } catch (Resources.NotFoundException e) {
             Log.e(TAG, "Can't find style. Error: ", e);
+        }
+    }
+
+    private void showTextOnDialogForRoute(Route route) {
+        TextView distance = findViewById(R.id.distance);
+        TextView percentage = findViewById(R.id.percentage);
+
+        Collections.sort(routeInfos, new Comparator<Route>() {
+            @Override
+            public int compare(Route o1, Route o2) {
+                return (int) (o1.getDifficulty() - o2.getDifficulty());
+            }
+        });
+
+        int index = routeInfos.indexOf(route);
+
+        String text = "", percentage_text = "";
+
+        if (index ==  0) {
+            text = "EASY ";
+            distance.setTextColor(Color.rgb(76, 175, 80));
+        } else if (index == routeInfos.size() - 1) {
+            text = "HARD! ";
+            distance.setTextColor(Color.RED);
+        } else {
+            text = "MEDIUM ";
+            distance.setTextColor(Color.rgb(255, 152, 0));
+        }
+
+        double diff_range = routeInfos.size() != 0 ? routeInfos.get(routeInfos.size() - 1).getDifficulty() : 0.0;
+
+        percentage_text = diff_range != 0.0 ? (int) ((route.getDifficulty() / diff_range) * 100) + "%" : "";
+        percentage.setText(percentage_text);
+        distance.setText(text);
+
+    }
+
+    public void drawRoutes() {
+        drawRoutes(false);
+    }
+
+    private void drawRoutes(boolean isStartedRoute) {
+        if (!isStartedRoute) dealWithStartButton();
+        for (Polyline p : polylines) {
+            Log.v(TAG, p.toString());
+            p.remove();
+        }
+        polylines.clear();
+
+        Collections.sort(routeInfos, new Comparator<Route>() {
+            @Override
+            public int compare(Route o1, Route o2) {
+                return (int) (o1.getDifficulty() - o2.getDifficulty());
+            }
+        });
+
+        float red = 0;
+        float green = 130;
+        int start = Color.HSVToColor(155, new float[]{green,100,100});
+        int end = Color.HSVToColor(155, new float[]{red,100,100});
+
+        int numOfRoutes = routeInfos.size() != 0 ? routeInfos.size() : 1;
+
+        int iterateBy = (int) (green - red) / numOfRoutes;
+        int i = 0;
+
+        for (Route r : routeInfos) {
+            if (isStartedRoute) {
+                r.setColor(Color.HSVToColor(155, new float[]{230,65,70}));
+            }
+            else if (r.isSelected()) {
+                if (i == 0) r.setColor(Color.HSVToColor(new float[]{green,100,100}));
+                else if (i == numOfRoutes - 1) r.setColor(Color.HSVToColor(new float[]{red,100,100}));
+                else r.setColor(Color.HSVToColor(new float[]{i * iterateBy,100,100}));
+            } else if (r.getDifficulty() == -1) {
+                r.setColor(Color.GRAY);
+            } else {
+                if (i == 0) r.setColor(start);
+                else if (i == numOfRoutes - 1) r.setColor(end);
+                else r.setColor(Color.HSVToColor(155, new float[]{i * iterateBy,100,100}));
+            }
+
+            i++;
+        }
+
+        Collections.sort(routeInfos, new Comparator<Route>() {
+            @Override
+            public int compare(Route o1, Route o2) {
+                return o1.isSelected() ? 1 : -1;
+            }
+        });
+
+        for (Route r : routeInfos) {
+            PolylineOptions polyline = r.getPolyline();
+            if (r.isSelected()) {
+
+                polyline.width(24); //just a random number...
+
+            } else {
+                polyline.width(16);
+            }
+
+
+            polyline.color(r.getColor());
+
+            polylines.add(map.addPolyline(polyline));
+
+        }
+    }
+
+    private void dealWithStartButton() {
+        Button start_button = findViewById(R.id.start_button);
+        start_button.setEnabled(false);
+
+        start_button.setBackground(getResources().getDrawable(R.drawable.roundedbuttondisabled));
+        for (Route r : routeInfos) {
+            if (r.isSelected()) {
+                start_button.setEnabled(true);
+                start_button.setBackground(getResources().getDrawable(R.drawable.roundedbutton));
+                break;
+            }
         }
     }
 
@@ -263,18 +391,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void directionsFound(ArrayList<ArrayList<String>> p) {
         ArrayList<PolylineOptions> polylineOptions = new ArrayList<>();
-        //PolylineOptions polylineOptions = new PolylineOptions();
         List<LatLng> al;
-
-        //start calculation of path
-//        CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
-//        calculateDifficultyTask.setListener(this);
-//        calculateDifficultyTask.execute(p);
-
-
-
-
-        Random rnd = new Random();
+        routeInfos.clear();
         //add polycodes to polyline
         for (int i = 0; i < p.size(); i++) {
             polylineOptions.add(new PolylineOptions());
@@ -283,16 +401,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 polylineOptions.get(i).addAll(al);
             }
 
-            polylineOptions.get(i).width(16); //just a random number...
 
-            polylineOptions.get(i).color(Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
-
-            map.addPolyline(polylineOptions.get(i));
-            mPolylines.add(polylineOptions.get(i));
-            routeInfos.add(new Route(polylineOptions.get(i), contours));
+            routeInfos.add(new Route(polylineOptions.get(i), contours, this));
 
 
         }
+
+        for (Route r : routeInfos) {
+            r.setDifficulty(contours);
+        }
+
+        drawRoutes();
     }
 
     /**
@@ -300,8 +419,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     private void addPlaceMarkers() {
         map.clear();
-
-
 
         //properties for CameraUpdateFactory
         int width = getResources().getDisplayMetrics().widthPixels;
@@ -363,24 +480,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void showLocationDetails(Place p) {
-        //TODO: re-make this so there is no black overlay
-        /*
-        LayoutInflater inflater = this.getLayoutInflater();
-        View v = inflater.inflate(R.layout.place_details, null);
-
-        PlaceDetailsDialog mapDetailsFragment = new PlaceDetailsDialog(this, v);
-
-        mapDetailsFragment.setName(p.getName());
-        mapDetailsFragment.setDistance(p.getDistanceFromCurrentLocation());
-        mapDetailsFragment.show();
-*/
         TextView routeName = findViewById(R.id.destination_name);
+        TextView distance = findViewById(R.id.distance);
+        TextView percentage = findViewById(R.id.percentage);
+        percentage.setText("");
+        distance.setText("Select a Route");
         routeName.setText(p.getName());
+        distance.setTextColor(Color.BLACK);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
         finder.getDirections(p, currentLatLng);
+    }
 
-
-
+    private void hideLocationDetails() {
+        TextView distance = findViewById(R.id.distance);
+        TextView percentage = findViewById(R.id.percentage);
+        percentage.setText("");
+        distance.setText("Select a Route");
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
     }
 
@@ -411,8 +527,45 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.v(TAG, "Contours Loading Finished");
         progressBar.setIndeterminate(false);
         progressBar.setVisibility(View.INVISIBLE);
+
         for (Route r : routeInfos) {
             r.setDifficulty(contours);
         }
+    }
+
+    public void startRoute(View view) {
+        hideLocationDetails();
+        Route selectedRoute = null;
+        for (Route r : routeInfos) {
+            if (r.isSelected()) {
+                selectedRoute = r;
+            }
+        }
+        routeInfos.clear();
+
+        if (selectedRoute != null)
+        routeInfos.add(selectedRoute);
+
+        drawRoutes(true);
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+        for (LatLng ll : selectedRoute.getPolyline().getPoints()) {
+            builder.include(ll);
+        }
+        //sets bounds to include location and end point in view
+        LatLngBounds bounds = builder
+                .include(currentLatLng)
+                .build();
+
+        //properties for CameraUpdateFactory
+        int width = getResources().getDisplayMetrics().widthPixels;
+        int height = getResources().getDisplayMetrics().heightPixels;
+        int padding = (int) (height * 0.10); // offset from edges of the map 10% of screen
+
+        //sets new camera
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
+
+        //updates camera
+        map.animateCamera(cameraUpdate);
     }
 }

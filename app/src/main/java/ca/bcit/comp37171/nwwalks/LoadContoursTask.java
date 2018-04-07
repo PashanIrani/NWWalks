@@ -55,7 +55,7 @@ public class LoadContoursTask extends AsyncTask<Void, Void, Contours> {
             Log.e("error parsing", e.toString());
         }
 
-        //Log.v(TAG, contours.toString());
+        Log.v(TAG, contours.toString());
         contours.removeRes();
         return contours;
     }

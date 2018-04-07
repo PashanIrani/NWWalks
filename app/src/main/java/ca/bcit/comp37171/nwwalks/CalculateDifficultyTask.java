@@ -1,6 +1,7 @@
 package ca.bcit.comp37171.nwwalks;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -25,10 +26,11 @@ public class CalculateDifficultyTask extends AsyncTask<LatLng, Void, Double> {
 
 
     protected Double doInBackground(LatLng... polyCodes) {
+
         double result = 0.0;
-        //for (LatLng polyCode[] : polyCodes) {
-            result += performCalc(polyCodes);
-        //}
+
+        result += performCalc(polyCodes);
+
         return result;
     }
 
@@ -44,28 +46,23 @@ public class CalculateDifficultyTask extends AsyncTask<LatLng, Void, Double> {
         int total_diff_in_elevation = 0;
         for (LatLng latLng : polyCodes) {
 
-
-            
-
-            int prev_elevation;
+            Log.v(TAG, latLng.longitude + ", " + latLng.latitude);
+            int prev_elevation = 0;
 
             // loop through turn points adding absolute diffs up
+            try {
+                int current_el = contours.getElevation(latLng);
+                if (current_el != -1) {
 
-           // for (LatLng latLng : al) {
-try {
-    int current_el = contours.getElevation(latLng);
-
-    if (current_el != -1) {
-        prev_elevation = current_el;
-        total_diff_in_elevation += Math.abs(current_el - prev_elevation);
-
-    }
-    //Log.v(TAG, "FOUND: " +current_el + ", total diff: " + total_diff_in_elevation);
-} catch (Exception e) {
-
-}
-            //}
+                    total_diff_in_elevation += Math.abs(current_el - prev_elevation);
+                    prev_elevation = current_el;
+                }
+            } catch (Exception e) {
+                //leaving blank
+            }
         }
+
+        Log.v(TAG, "Calculating return.... " + total_diff_in_elevation);
         return total_diff_in_elevation;
     }
 
