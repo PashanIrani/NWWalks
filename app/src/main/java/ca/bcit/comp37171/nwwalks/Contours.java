@@ -63,8 +63,9 @@ public class Contours {
         int index = -1;
         for (Features f : features) {
             ++i;
-            //Log.v("i", "i: " + i);
+
             if(f.geometry.coordinates.contains(latLng) || f.geometry.coordinates.contains(latLng)) {
+                Log.v("i", "i: " + i);
                 index = i;
                 break;
             }

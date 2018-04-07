@@ -14,13 +14,26 @@ public class Route implements AsyncResponse{
     private double difficulty;
     private static final String TAG = "Route.java";
     private Contours contours;
-    public Route(PolylineOptions polyline, Contours contours) {
+    private boolean selected = false;
+    private MainActivity listner;
+    int color;
+    public Route(PolylineOptions polyline, Contours contours, MainActivity listner) {
+        this.difficulty = -1;
         this.polyline = polyline;
         this.contours = contours;
+        this.listner = listner;
         CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
         calculateDifficultyTask.setListener(this);
         calculateDifficultyTask.execute(polyline.getPoints().toArray(new LatLng[]{}));
 
+    }
+
+    public int getColor() {
+        return color;
+    }
+
+    public void setColor(int color) {
+        this.color = color;
     }
 
     public PolylineOptions getPolyline() {
@@ -32,9 +45,6 @@ public class Route implements AsyncResponse{
     }
 
     public double getDifficulty() {
-        CalculateDifficultyTask calculateDifficultyTask = new CalculateDifficultyTask(contours);
-        calculateDifficultyTask.setListener(this);
-        calculateDifficultyTask.execute(polyline.getPoints().toArray(new LatLng[]{}));
         return difficulty;
     }
 
@@ -51,6 +61,7 @@ public class Route implements AsyncResponse{
     public void processFinish(Double output) {
         Log.v("Route.java", "RESULT OF CALCULATION: " + output);
         this.difficulty = output;
+        listner.drawRoutes();
         //TextView distance = findViewById(R.id.distance);
         //String text = "" + output;
         //distance.setText(text);
@@ -59,5 +70,13 @@ public class Route implements AsyncResponse{
     @Override
     public void processFinish(Contours output) {
         // nothing
+    }
+
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
     }
 }
