@@ -168,6 +168,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         TextView distance = findViewById(R.id.distance);
         TextView percentage = findViewById(R.id.percentage);
 
+        if (route == null) {
+            percentage.setText("");
+            distance.setText("Select a Route");
+            distance.setTextColor(Color.BLACK);
+            return;
+        }
+
         Collections.sort(routeInfos, new Comparator<Route>() {
             @Override
             public int compare(Route o1, Route o2) {
