@@ -1,6 +1,7 @@
 package ca.bcit.comp37171.nwwalks;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -11,6 +12,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -310,8 +312,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 //captures position in a fancy LatLng obj
                 currentLatLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
 
-                //moves Map
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
+                if (newWest_bounds.contains(currentLatLng)) {
+                    //moves Map
+                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
+                } else {
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+                    builder.setTitle("You need to be in New Westminster")
+                            .setMessage("Please goto New Westminster to use this app")
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    System.exit(0);
+                                }
+                            })
+                            .show();
+
+                }
 
             }
         }
